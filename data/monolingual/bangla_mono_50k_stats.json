@@ -1,0 +1,7 @@
+{
+  "raw": 2379749,
+  "after_normalise_and_min_length": 2019406,
+  "after_dedup": 1874919,
+  "after_parallel_overlap_removal": 1869450,
+  "selected": 50000
+}

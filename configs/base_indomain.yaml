@@ -1,0 +1,46 @@
+# Thesis Experiment 1 / "Baseline 1": in-domain 80/10/10 split of the gold pairs.
+# Reported: validation BLEU 32.10, in-domain test BLEU 30.26, out-of-domain test BLEU 14.09.
+# The original notebook read an older copy of the training CSV (columns Chakma_Transliterated /
+# Bangla), so the exact rows in each split may differ slightly from the thesis run.
+#
+#   python scripts/train_base.py --config configs/base_indomain.yaml
+
+output_dir: outputs/base_indomain
+seed: 42
+deterministic: true
+
+data:
+  train: data/parallel/train.csv
+  test: data/parallel/test.csv          # still evaluated as the out-of-domain benchmark
+  split: indomain_80_10_10
+  split_seed: 42
+  keep_nan_rows: true
+
+model:
+  name: csebuetnlp/banglat5
+  max_source_length: 128
+  max_target_length: 128
+
+train:
+  epochs: 30
+  batch_size: 4
+  grad_accum: 16
+  lr: 3.0e-4
+  scheduler: linear
+  warmup_steps: 800
+  weight_decay: 0.01
+  label_smoothing: 0.3
+  precision: auto
+  pad_to_multiple_of_8: true
+  early_stopping_patience: null
+  logging_steps: 50
+
+val_generation:
+  max_length: 128
+  num_beams: 5
+  early_stopping: true
+
+test_generation:
+  num_beams: 5
+  max_new_tokens: 128
+  batch_size: 1

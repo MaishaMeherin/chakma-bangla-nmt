@@ -1,0 +1,48 @@
+# Baseline: fine-tune BanglaT5 (Chakma -> Bangla) on all gold pairs.
+# Thesis Section 4.4.6, "Baseline 2": validation BLEU 55.98, out-of-domain test BLEU 14.71.
+# This checkpoint is also the starting point of the back-translation pipeline.
+#
+#   python scripts/train_base.py --config configs/base.yaml
+
+output_dir: outputs/base
+seed: 42
+deterministic: true          # cuDNN deterministic mode, as in the thesis notebook
+
+data:
+  train: data/parallel/train.csv
+  dev: data/parallel/dev.csv
+  test: data/parallel/test.csv          # 600-sentence out-of-domain news benchmark
+  split: external_dev                   # train on all of train.csv, validate on dev.csv
+  keep_nan_rows: true                   # thesis baseline kept 6 rows whose Chakma cell was empty
+                                        # (15,960 pairs). Set false for the cleaner 15,954.
+
+model:
+  name: csebuetnlp/banglat5
+  max_source_length: 128
+  max_target_length: 128
+
+train:
+  epochs: 30
+  batch_size: 4
+  grad_accum: 16                        # effective batch 64
+  lr: 3.0e-4
+  scheduler: linear
+  warmup_steps: 800
+  weight_decay: 0.01
+  label_smoothing: 0.3
+  precision: auto                       # bf16 if the GPU supports it, else fp16
+  pad_to_multiple_of_8: true
+  early_stopping_patience: null         # baseline ran all 30 epochs
+  logging_steps: 50
+
+# Generation used for the per-epoch validation BLEU (checkpoint selection).
+val_generation:
+  max_length: 128
+  num_beams: 5
+  early_stopping: true
+
+# Generation used for the final test scores (thesis protocol).
+test_generation:
+  num_beams: 5
+  max_new_tokens: 128
+  batch_size: 1                         # per-sentence; batching can shift scores slightly

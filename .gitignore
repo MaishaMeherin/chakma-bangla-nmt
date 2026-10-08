@@ -1,0 +1,21 @@
+# Training outputs, checkpoints and model weights (each model is ~1 GB; see README "Trained models")
+outputs/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+
+# Large raw corpus (rebuild data/monolingual/bangla_mono_50k.csv with scripts/prepare_bangla_mono.py)
+BanglaNMT_train.csv
+
+# Python / tooling
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+runs/
+.DS_Store
+Thumbs.db

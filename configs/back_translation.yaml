@@ -1,0 +1,62 @@
+# Two-iteration back-translation (thesis Sections 4.4.2 and 4.4.7, Table 4.15).
+# Needs the baseline checkpoint from configs/base.yaml.
+#
+#   python scripts/run_back_translation.py --config configs/back_translation.yaml
+#
+# Each iteration runs 4 steps (+ evaluation), and every step saves its output, so a
+# crashed run resumes where it stopped:
+#   1. gen_bn          forward model translates monolingual Chakma -> synthetic Bangla
+#   2. train_backward  fresh BanglaT5, Bangla -> Chakma, on gold x2 + step-1 pairs
+#   3. gen_ccp         backward model translates monolingual Bangla -> synthetic Chakma
+#   4. train_forward   from the baseline checkpoint, Chakma -> Bangla, on gold x2 + step-3 pairs
+#   5. evaluate        forward model on the 600-sentence out-of-domain test set
+# The forward model of iteration k generates the synthetic Bangla for iteration k+1.
+
+output_dir: outputs/back_translation
+base_model: outputs/base/final_model   # fine-tuned baseline (forward model for iteration 1)
+seed: 42
+num_iterations: 2
+
+data:
+  train: data/parallel/train.csv
+  dev: data/parallel/dev.csv
+  test: data/parallel/test.csv
+  split: external_dev
+  keep_nan_rows: false                  # 15,954 gold pairs, as in the BT notebook
+  chakma_mono: data/monolingual/chakma_mono.csv     # 42,783 raw -> 38,032 after cleaning
+  bangla_mono: data/monolingual/bangla_mono_50k.csv # built by scripts/prepare_bangla_mono.py
+
+model:
+  name: csebuetnlp/banglat5            # backward models start from the pretrained checkpoint
+  max_source_length: 128
+  max_target_length: 128
+
+back_translation:
+  anchor_repeat: 2                      # gold pairs repeated 2x in every training mix
+  length_ratio_threshold: 2.5           # drop synthetic pairs whose output is > 2.5x the input
+  strip_prefixes: true                  # remove copied task prefixes from CCP->BN generations
+  synthetic_num_beams: 5
+  synthetic_max_new_tokens: 128
+  synthetic_batch_size: 16
+
+train:
+  epochs_per_iteration: [20, 30]        # max epochs: iteration 1 = 20, iteration 2 = 30
+  batch_size: 4
+  grad_accum: 16
+  lr: 3.0e-4
+  scheduler: linear
+  warmup_steps: 800
+  weight_decay: 0.01
+  label_smoothing: 0.3
+  precision: fp32                       # fp16 produced NaN losses for these runs
+  early_stopping_patience: 3            # on validation BLEU (never triggered in the thesis)
+  logging_steps: 500
+
+val_generation:                         # fast greedy decoding for per-epoch validation
+  max_new_tokens: 128
+  num_beams: 1
+
+test_generation:
+  num_beams: 5
+  max_new_tokens: 128
+  batch_size: 1

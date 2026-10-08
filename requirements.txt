@@ -1,0 +1,37 @@
+# Chakma -> Bangla NMT (BanglaT5 + iterative back-translation)
+# Thesis runs: Python 3.12, PyTorch 2.10 + CUDA 12.6, transformers 4.36.2, RTX 4080 SUPER (16 GB).
+#
+#   1) Install PyTorch for your CUDA version first: https://pytorch.org/get-started/locally/
+#   2) pip install -r requirements.txt
+#
+# transformers is pinned to the thesis version; the code also handles newer argument names
+# (eval_strategy / processing_class), but scores were only verified with 4.36.2.
+
+torch>=2.2,<2.11
+transformers==4.36.2
+accelerate>=0.26,<1.0
+datasets>=2.16,<3.0
+sentencepiece>=0.1.99
+protobuf>=3.20,<5
+
+# BanglaT5 text normaliser (required; every thesis run used it)
+normalizer @ git+https://github.com/csebuetnlp/normalizer
+
+# Metrics
+evaluate==0.4.1
+sacrebleu>=2.3,<3
+nltk>=3.8
+jiwer>=3.0
+
+numpy>=1.24,<2.0
+pandas>=2.0,<3
+scikit-learn>=1.3
+pyyaml>=6.0
+tqdm>=4.66
+matplotlib>=3.7
+
+# Tests
+pytest>=7
+
+# Optional: only for scripts/transliterate.py (needs Python <= 3.13)
+# aksharamukha>=2.3
